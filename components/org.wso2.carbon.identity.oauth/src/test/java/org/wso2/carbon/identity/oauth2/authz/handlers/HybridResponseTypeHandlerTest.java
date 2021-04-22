@@ -38,10 +38,11 @@ import org.wso2.carbon.identity.oauth2.authz.OAuthAuthzReqMessageContext;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AuthorizeReqDTO;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AuthorizeRespDTO;
 import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
-import org.wso2.carbon.identity.oauth2.model.AuthzCodeDO;
 import org.wso2.carbon.identity.oauth2.util.OAuth2TokenUtil;
 
-import static org.powermock.api.mockito.PowerMockito.*;
+import static org.mockito.Matchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.doNothing;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
 /**
  * Test class covering HybridResponseTypeHandler
@@ -54,7 +55,6 @@ import static org.powermock.api.mockito.PowerMockito.*;
         initUserStoreManager = true,
         injectToSingletons = {OAuthComponentServiceHolder.class})
 @PrepareForTest({OAuth2TokenUtil.class})
-
 public class HybridResponseTypeHandlerTest {
 
 
@@ -161,7 +161,7 @@ public class HybridResponseTypeHandlerTest {
 //                .setApprovedScope(new String[]{"scope1", "scope2", OAuthConstants.Scope.OPENID});
 //
 //        mockStatic(OAuth2TokenUtil.class);
-//        doNothing().when(OAuth2TokenUtil.class);
+//        doNothing().when(OAuth2TokenUtil.postIssueCode(anyString(),anyString()));
 //
 //        OAuth2AuthorizeRespDTO oAuth2AuthorizeRespDTO =
 //                hybridResponseTypeHandler.issue(authAuthzReqMessageContext);
