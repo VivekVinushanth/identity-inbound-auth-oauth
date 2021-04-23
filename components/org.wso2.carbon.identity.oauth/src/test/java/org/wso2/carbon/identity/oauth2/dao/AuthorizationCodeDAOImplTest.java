@@ -24,7 +24,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.base.IdentityException;
+import org.wso2.carbon.identity.application.common.model.ServiceProvider;
+import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.common.testng.WithCarbonHome;
 import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
@@ -32,6 +33,7 @@ import org.wso2.carbon.identity.oauth.common.OAuthConstants;
 import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth.dao.SQLQueries;
 import org.wso2.carbon.identity.oauth2.dao.util.DAOUtils;
+import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
 import org.wso2.carbon.identity.oauth2.model.AuthzCodeDO;
 import org.wso2.carbon.identity.oauth2.util.OAuth2TokenUtil;
 import org.wso2.carbon.identity.oauth2.util.OAuth2Util;
@@ -41,23 +43,37 @@ import org.wso2.carbon.user.core.UserCoreConstants;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
 import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
-import static org.wso2.carbon.identity.oauth2.util.OAuth2Util.getTenantId;
 
 /**
  * Unit tests for AuthorizationCodeDAO.
  */
 @WithCarbonHome
-@PrepareForTest({IdentityDatabaseUtil.class, OAuth2Util.class, OAuth2TokenUtil.class, IdentityUtil.class, OAuthServerConfiguration.class})
+@PrepareForTest({IdentityDatabaseUtil.class, OAuth2Util.class, OAuth2TokenUtil.class, IdentityUtil.class,
+        OAuthServerConfiguration.class})
 public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
 
     @Mock
     OAuth2TokenUtil oAuth2TokenUtil;
+
+    @Mock
+    private ServiceProvider mockedServiceProvider;
+
+    @Mock
+    private AuthenticatedUser mockedAuthenticatedUser;
+
+    @Mock
+    private ApplicationManagementService applicationManagementService;
 
     private AuthorizationCodeDAOImpl authorizationCodeDAO;
 //    AuthzCodeDO authzCodeDO;
@@ -79,7 +95,7 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
 
         authorizationCodeDAO = new AuthorizationCodeDAOImpl();
 
-        scopes = new String[]{"openid", "sms", "email"};
+        scopes = new String[]{"sms", "openid", "email"};
 
         authenticatedUser.setTenantDomain("super.wso2");
         authenticatedUser.setUserName("randomUser");
@@ -116,8 +132,9 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
         return authzCodeDO;
     }
 
-    private AuthzCodeDO persistAuthorizationCodeWithModifiedScope(String consumerKey, String authzCodeId, String authzCode,
-                                                                  boolean createApplication, String status, String[] scope) throws Exception {
+    private AuthzCodeDO persistAuthorizationCodeWithModifiedScope(String consumerKey, String authzCodeId,
+                                                                  String authzCode, boolean createApplication,
+                                                                  String status, String[] scope) throws Exception {
 
         if (createApplication) {
             createApplication(consumerKey, UUID.randomUUID().toString(), DEFAULT_TENANT_ID);
@@ -147,7 +164,8 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
         mockStatic(OAuth2Util.class);
         when(OAuth2Util.getTenantId(anyString())).thenReturn(DEFAULT_TENANT_ID);
 
-        AuthzCodeDO authzCodeDO = persistAuthorizationCode(consumerKey, authzCodeID, authzCode, true, OAuthConstants.AuthorizationCodeState.ACTIVE);
+        AuthzCodeDO authzCodeDO = persistAuthorizationCode(consumerKey, authzCodeID, authzCode, true,
+                OAuthConstants.AuthorizationCodeState.ACTIVE);
 
         try (Connection connection = DAOUtils.getConnection(DB_NAME)) {
 
@@ -155,7 +173,8 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
             when(IdentityDatabaseUtil.getDBConnection()).thenReturn(connection);
             when(IdentityDatabaseUtil.getDBConnection(false)).thenReturn(connection);
 
-            Assert.assertEquals(authorizationCodeDAO.getCodeIdByAuthorizationCode(authzCode), authzCodeDO.getAuthzCodeId());
+            Assert.assertEquals(authorizationCodeDAO.getCodeIdByAuthorizationCode(authzCode),
+                    authzCodeDO.getAuthzCodeId());
             Assert.assertNull(authorizationCodeDAO.getCodeIdByAuthorizationCode(UUID.randomUUID().toString()));
 
         }
@@ -171,7 +190,8 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
         mockStatic(OAuth2Util.class);
         when(OAuth2Util.getTenantId(anyString())).thenReturn(DEFAULT_TENANT_ID);
 
-        AuthzCodeDO authzCodeDO2 = persistAuthorizationCode(consumerKey2, authzCodeID2, authzCode2, true, OAuthConstants.AuthorizationCodeState.ACTIVE);
+        AuthzCodeDO authzCodeDO2 = persistAuthorizationCode(consumerKey2, authzCodeID2, authzCode2,
+                true, OAuthConstants.AuthorizationCodeState.ACTIVE);
 
         Set<String> availAuthzCodes = new HashSet<>();
         availAuthzCodes.add(authzCode2);
@@ -183,8 +203,10 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
             when(IdentityDatabaseUtil.getDBConnection()).thenReturn(connection1);
             when(IdentityDatabaseUtil.getDBConnection(false)).thenReturn(connection1);
 
-            Assert.assertEquals(authorizationCodeDAO.getAuthorizationCodesByConsumerKey(authzCodeDO2.getConsumerKey()), availAuthzCodes);
-            Assert.assertTrue(authorizationCodeDAO.getAuthorizationCodesByConsumerKey(UUID.randomUUID().toString()).isEmpty());
+            Assert.assertEquals(authorizationCodeDAO.getAuthorizationCodesByConsumerKey(authzCodeDO2.getConsumerKey()),
+                    availAuthzCodes);
+            Assert.assertTrue(authorizationCodeDAO.getAuthorizationCodesByConsumerKey(UUID.randomUUID().
+                    toString()).isEmpty());
 
         }
     }
@@ -203,8 +225,10 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
         mockStatic(OAuth2Util.class);
         when(OAuth2Util.getTenantId(anyString())).thenReturn(DEFAULT_TENANT_ID);
 
-        AuthzCodeDO authzCodeDO1 = persistAuthorizationCode(consumerKey1, authzCodeID1, authzCode1, true, OAuthConstants.AuthorizationCodeState.ACTIVE);
-        AuthzCodeDO authzCodeDO2 = persistAuthorizationCode(consumerKey2, authzCodeID2, authzCode2, true, OAuthConstants.AuthorizationCodeState.ACTIVE);
+        AuthzCodeDO authzCodeDO1 = persistAuthorizationCode(consumerKey1, authzCodeID1, authzCode1, true,
+                OAuthConstants.AuthorizationCodeState.ACTIVE);
+        AuthzCodeDO authzCodeDO2 = persistAuthorizationCode(consumerKey2, authzCodeID2, authzCode2, true,
+                OAuthConstants.AuthorizationCodeState.ACTIVE);
 
         Set<String> availAuthzCodes = new HashSet<>();
         availAuthzCodes.add(authzCode2);
@@ -219,11 +243,15 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
             // if state is EXPIRED/INACTIVE needs to revoke token as well.
             mockStatic(OAuth2TokenUtil.class);
             doNothing().when(OAuth2TokenUtil.class, "postRevokeCode", anyString(), anyString(), anyString());
-            authorizationCodeDAO.updateAuthorizationCodeState(authzCodeDO1.getAuthorizationCode(), OAuthConstants.AuthorizationCodeState.REVOKED);
+            authorizationCodeDAO.updateAuthorizationCodeState(authzCodeDO1.getAuthorizationCode(),
+                    OAuthConstants.AuthorizationCodeState.REVOKED);
 
-            Assert.assertEquals(authorizationCodeDAO.getActiveAuthorizationCodesByConsumerKey(authzCodeDO2.getConsumerKey()), availAuthzCodes);
-            Assert.assertTrue(authorizationCodeDAO.getActiveAuthorizationCodesByConsumerKey(UUID.randomUUID().toString()).isEmpty());
-            Assert.assertTrue(authorizationCodeDAO.getActiveAuthorizationCodesByConsumerKey(authzCodeDO1.getConsumerKey()).isEmpty());
+            Assert.assertEquals(authorizationCodeDAO.getActiveAuthorizationCodesByConsumerKey
+                    (authzCodeDO2.getConsumerKey()), availAuthzCodes);
+            Assert.assertTrue(authorizationCodeDAO.getActiveAuthorizationCodesByConsumerKey
+                    (UUID.randomUUID().toString()).isEmpty());
+            Assert.assertTrue(authorizationCodeDAO.getActiveAuthorizationCodesByConsumerKey
+                    (authzCodeDO1.getConsumerKey()).isEmpty());
 
         }
     }
@@ -238,7 +266,8 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
         when(OAuth2Util.getTenantId(anyString())).thenReturn(DEFAULT_TENANT_ID);
         when(OAuth2Util.getUserStoreDomain(any())).thenReturn("PRIMARY");
 
-        AuthzCodeDO authzCodeDO1 = persistAuthorizationCode(consumerKey1, authzCodeID1, authzCode1, true, OAuthConstants.AuthorizationCodeState.ACTIVE);
+        AuthzCodeDO authzCodeDO1 = persistAuthorizationCode(consumerKey1, authzCodeID1, authzCode1, true,
+                OAuthConstants.AuthorizationCodeState.ACTIVE);
 
         AuthenticatedUser fakeAuthenticatedUser = new AuthenticatedUser();
         fakeAuthenticatedUser.setTenantDomain("super.wso2");
@@ -258,12 +287,44 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
             when(OAuth2Util.isHashDisabled()).thenReturn(true);
 
             // So that it passes the validation without wanting to traverse internally
-            when(OAuth2Util.calculateValidityInMillis(anyLong(),anyLong())).thenReturn(2000L);
+            when(OAuth2Util.calculateValidityInMillis(anyLong(), anyLong())).thenReturn(2000L);
 
-            Assert.assertTrue((authorizationCodeDAO.getAuthorizationCodesByUser(authenticatedUser).contains(authzCodeDO1.getAuthorizationCode())));
+            Assert.assertTrue((authorizationCodeDAO.getAuthorizationCodesByUser(authenticatedUser).
+                    contains(authzCodeDO1.getAuthorizationCode())));
             Assert.assertTrue(authorizationCodeDAO.getAuthorizationCodesByUser(fakeAuthenticatedUser).isEmpty());
         }
 
+    }
+
+    @Test
+    public void testValidateAuthorizationCode() throws Exception {
+
+        String consumerKey1 = UUID.randomUUID().toString();
+        String authzCodeID1 = UUID.randomUUID().toString();
+        String authzCode1 = UUID.randomUUID().toString();
+
+        AuthzCodeDO authzCodeDO1 = persistAuthorizationCode(consumerKey1, authzCodeID1, authzCode1, true,
+                OAuthConstants.AuthorizationCodeState.ACTIVE);
+
+
+        try (Connection connection1 = DAOUtils.getConnection(DB_NAME)) {
+            mockStatic(IdentityDatabaseUtil.class);
+
+            when(IdentityDatabaseUtil.getDBConnection()).thenReturn(connection1);
+            when(IdentityDatabaseUtil.getDBConnection(false)).thenReturn(connection1);
+
+            OAuth2ServiceComponentHolder.setIDPIdColumnEnabled(false);
+            OAuth2ServiceComponentHolder.setApplicationMgtService(applicationManagementService);
+            when(applicationManagementService.getServiceProviderByClientId(anyString(), any(), anyString())).
+                    thenReturn(mockedServiceProvider);
+
+            when(OAuth2Util.createAuthenticatedUser(anyString(), anyString(), anyString(), anyString())).
+                    thenReturn(mockedAuthenticatedUser);
+            doNothing().when(mockedAuthenticatedUser, "setAuthenticatedSubjectIdentifier", anyString(), anyObject());
+
+            Assert.assertNotNull(authorizationCodeDAO.validateAuthorizationCode(authzCodeDO1.getConsumerKey(),
+                    authzCodeDO1.getAuthorizationCode()));
+        }
     }
 
     protected void createApplication(String consumerKey, String consumerSecret, int tenantId) throws Exception {
@@ -297,46 +358,5 @@ public class AuthorizationCodeDAOImplTest extends PowerMockIdentityBaseTest {
             statement.execute();
         }
     }
-
-
-//
-//    @Test
-//    public void testGetAuthorizationCodeDOSetByConsumerKeyForOpenidScope() throws Exception {
-//
-//        String consumerKey1 = UUID.randomUUID().toString();
-//        String authzCodeID1 = UUID.randomUUID().toString();
-//        String authzCode1 = UUID.randomUUID().toString();
-//
-//        String consumerKey3 = UUID.randomUUID().toString();
-//        String authzCodeID3 = UUID.randomUUID().toString();
-//        String authzCode3 = UUID.randomUUID().toString();
-//
-//        mockStatic(OAuth2Util.class);
-//        when(getTenantId(anyString())).thenReturn(DEFAULT_TENANT_ID);
-//
-//        AuthzCodeDO authzCodeDO1 = persistAuthorizationCode(consumerKey1, authzCodeID1, authzCode1, true,
-//                OAuthConstants.AuthorizationCodeState.ACTIVE);
-//
-//        String tempscope [] = new String[]{"sms", "email"};
-//
-//        AuthzCodeDO authzCodeDO3 = persistAuthorizationCodeWithModifiedScope(consumerKey3, authzCodeID3, authzCode3, true,
-//                OAuthConstants.AuthorizationCodeState.ACTIVE,tempscope);
-//
-//        Set<AuthzCodeDO> availAuthzCodeDO = new HashSet<>();
-//        availAuthzCodeDO.add(authzCodeDO1);
-//
-//        try (Connection connection1 = DAOUtils.getConnection(DB_NAME)) {
-//            mockStatic(IdentityDatabaseUtil.class);
-//            mockStatic(OAuth2Util.class);
-//
-//            when(IdentityDatabaseUtil.getDBConnection()).thenReturn(connection1);
-//            when(IdentityDatabaseUtil.getDBConnection(false)).thenReturn(connection1);
-//
-//            Assert.assertFalse(authorizationCodeDAO.getAuthorizationCodeDOSetByConsumerKeyForOpenidScope(authzCodeDO1.getConsumerKey()).isEmpty());
-////            Assert.assertTrue(authorizationCodeDAO.getAuthorizationCodeDOSetByConsumerKeyForOpenidScope(authzCodeDO3.getConsumerKey()).isEmpty());
-//        }
-//    }
-
-//    assertTrue("INACTIVE".equals(getAuthzCodeStatusByCode(authzCode)), "Failed to deactivate authz code.");
 
 }
