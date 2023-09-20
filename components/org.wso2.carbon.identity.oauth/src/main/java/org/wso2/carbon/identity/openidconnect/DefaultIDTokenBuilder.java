@@ -39,6 +39,7 @@ import org.wso2.carbon.identity.oauth.common.OAuthConstants;
 import org.wso2.carbon.identity.oauth.common.exception.InvalidOAuthClientException;
 import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth.dao.OAuthAppDO;
+import org.wso2.carbon.identity.oauth.extension.utils.JSEngineUtil;
 import org.wso2.carbon.identity.oauth2.IDTokenValidationFailureException;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.authz.OAuthAuthzReqMessageContext;
@@ -213,6 +214,8 @@ public class DefaultIDTokenBuilder implements org.wso2.carbon.identity.openidcon
         jwtClaimsSetBuilder.subject(subjectClaim);
         JWTClaimsSet jwtClaimsSet = handleOIDCCustomClaims(tokenReqMsgCtxt, jwtClaimsSetBuilder);
 
+        // at this point we have all claims for id token in jwtClaimsSet object
+
         if (isInvalidToken(jwtClaimsSet)) {
             throw new IDTokenValidationFailureException("Error while validating ID Token token for required claims");
         }
@@ -301,6 +304,9 @@ public class DefaultIDTokenBuilder implements org.wso2.carbon.identity.openidcon
                 .addProperty(MultitenantConstants.TENANT_DOMAIN, getSpTenantDomain(authzReqMessageContext));
         jwtClaimsSetBuilder.subject(subject);
         JWTClaimsSet jwtClaimsSet = handleCustomOIDCClaims(authzReqMessageContext, jwtClaimsSetBuilder);
+
+        jwtClaimsSet = JSEngineUtil.getIDTokenExtendedClaims(jwtClaimsSetBuilder, OAuth2Util.getServiceProvider(clientId),
+                spTenantDomain, jwtClaimsSet);
 
         if (isUnsignedIDToken()) {
             return new PlainJWT(jwtClaimsSet).serialize();

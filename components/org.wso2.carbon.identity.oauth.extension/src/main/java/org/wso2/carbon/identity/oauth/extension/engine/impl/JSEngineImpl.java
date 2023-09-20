@@ -123,6 +123,12 @@ public class JSEngineImpl implements JSEngine {
         return jsObjects;
     }
 
+    @Override
+    public ScriptEngine getEngine() {
+
+        return this.engine;
+    }
+
     /**
      * This method returns the current thread's class loader.
      * @return Returns NashornScriptEngineFactory class to evaluate the javascript if classLoader is null.

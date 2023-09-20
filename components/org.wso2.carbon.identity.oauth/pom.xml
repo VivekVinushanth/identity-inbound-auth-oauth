@@ -49,6 +49,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>
+            <artifactId>org.wso2.carbon.identity.oauth.extension</artifactId>
+            <version>6.11.106</version>
+            <!--            <scope>provided</scope>-->
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <scope>test</scope>
@@ -328,6 +334,11 @@
             <groupId>com.sun.xml.parsers</groupId>
             <artifactId>jaxp-ri</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>
+            <artifactId>org.wso2.carbon.identity.oauth.extension</artifactId>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

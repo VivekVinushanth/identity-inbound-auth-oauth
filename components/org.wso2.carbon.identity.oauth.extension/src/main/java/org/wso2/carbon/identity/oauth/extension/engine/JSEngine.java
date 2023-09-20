@@ -21,6 +21,7 @@ package org.wso2.carbon.identity.oauth.extension.engine;
 import java.util.List;
 import java.util.Map;
 
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
 /**
@@ -71,4 +72,6 @@ public interface JSEngine {
      * @return A map of key-value pairs representing the JavaScript objects from the specified bindings.
      */
     Map<String, Object> getJSObjects(List<String> bindings);
+
+    ScriptEngine getEngine();
 }

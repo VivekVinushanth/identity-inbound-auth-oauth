@@ -21,6 +21,9 @@ package org.wso2.carbon.identity.oauth.extension.utils;
 import org.apache.commons.lang.StringUtils;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.oauth.extension.choreo.callback.Callback;
+import org.wso2.carbon.identity.oauth.extension.choreo.callback.CallbackImpl;
+import org.wso2.carbon.identity.oauth.extension.choreo.callback.OpenJdkCallbackImpl;
 import org.wso2.carbon.identity.oauth.extension.engine.JSEngine;
 import org.wso2.carbon.identity.oauth.extension.engine.impl.JSEngineImpl;
 import org.wso2.carbon.identity.oauth.extension.engine.impl.OpenJdkJSEngineImpl;
@@ -62,5 +65,21 @@ public class EngineUtils {
                 return null;
             }
         }
+    }
+
+    /**
+     * Get the Callback based on the engine.
+     *
+     * @return Callback instance.
+     */
+    public static Callback getCallbackBasedOnEngine(JSEngine jsEngine) {
+
+        if (jsEngine instanceof OpenJdkJSEngineImpl) {
+            return OpenJdkCallbackImpl.getInstance(jsEngine);
+        }
+        if (jsEngine instanceof JSEngineImpl) {
+            return CallbackImpl.getInstance(jsEngine);
+        }
+        return null;
     }
 }

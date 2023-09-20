@@ -678,6 +678,17 @@
                 <artifactId>org.wso2.carbon.identity.central.log.mgt</artifactId>
                 <version>${carbon.identity.framework.version}</version>
             </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.wso2.carbon.identity.conditional.auth.functions</groupId>-->
+<!--                <artifactId>org.wso2.carbon.identity.conditional.auth.functions.choreo</artifactId>-->
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.wso2.carbon.identity.framework</groupId>-->
+<!--                        <artifactId>org.wso2.carbon.identity.core</artifactId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
+<!--                <version>1.2.30</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>com.sun.xml.parsers</groupId>
                 <artifactId>jaxp-ri</artifactId>
@@ -967,6 +978,8 @@
         <spring-web.version>4.3.29.RELEASE</spring-web.version>
         <swagger-jaxrs.version>1.6.2</swagger-jaxrs.version>
         <com.fasterxml.jackson.databind.version.range>[2.13.0, 2.14.0)</com.fasterxml.jackson.databind.version.range>
+
+        <httpcore.version>4.4.14.wso2v1</httpcore.version>
 
         <!--Test Dependencies-->
         <junit.version>4.13.1</junit.version>

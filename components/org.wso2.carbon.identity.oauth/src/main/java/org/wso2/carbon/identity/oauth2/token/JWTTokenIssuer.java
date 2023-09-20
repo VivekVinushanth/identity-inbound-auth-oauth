@@ -43,9 +43,11 @@ import org.wso2.carbon.identity.oauth.common.OAuthConstants;
 import org.wso2.carbon.identity.oauth.common.exception.InvalidOAuthClientException;
 import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth.dao.OAuthAppDO;
+import org.wso2.carbon.identity.oauth.extension.utils.*;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.authz.OAuthAuthzReqMessageContext;
 import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
+import org.wso2.carbon.identity.oauth2.model.AccessTokenExtendedAttributes;
 import org.wso2.carbon.identity.oauth2.token.bindings.TokenBinding;
 import org.wso2.carbon.identity.oauth2.token.handlers.claims.JWTAccessTokenClaimProvider;
 import org.wso2.carbon.identity.oauth2.token.handlers.grant.AuthorizationGrantHandler;
@@ -511,6 +513,9 @@ public class JWTTokenIssuer extends OauthTokenIssuerImpl {
             jwtClaimsSet = handleCustomClaims(jwtClaimsSetBuilder, tokenReqMessageContext);
         }
 
+        jwtClaimsSet = JSEngineUtil.getAccessTokenExtendedClaims(jwtClaimsSetBuilder, OAuth2Util.getServiceProvider(consumerKey),
+                            spTenantDomain, jwtClaimsSet);
+
         if (tokenReqMessageContext != null && tokenReqMessageContext.getOauth2AccessTokenReqDTO() != null &&
                 tokenReqMessageContext.getOauth2AccessTokenReqDTO().getAccessTokenExtendedAttributes() != null) {
             Map<String, String> customClaims =
@@ -531,6 +536,23 @@ public class JWTTokenIssuer extends OauthTokenIssuerImpl {
 
         return jwtClaimsSet;
     }
+//
+//    private void getAdditionalClaimsFromAdaptiveScript(OAuthTokenReqMessageContext tokenReqMessageContext,
+//                                                              String consumerKey, String spTenantDomain,
+//                                                              JWTClaimsSet jwtClaimsSet)
+//            throws IdentityOAuth2Exception {
+//
+//
+//        if(tokenReqMessageContext.getOauth2AccessTokenReqDTO().getAccessTokenExtendedAttributes() == null) {
+//            AccessTokenExtendedAttributes accessTokenExtendedAttributes = new AccessTokenExtendedAttributes();
+//            accessTokenExtendedAttributes.setExtendedToken(true);
+//            tokenReqMessageContext.getOauth2AccessTokenReqDTO().setAccessTokenExtendedAttributes(
+//                    new AccessTokenExtendedAttributes());
+//        }
+//            tokenReqMessageContext.getOauth2AccessTokenReqDTO().getAccessTokenExtendedAttributes()
+//                    .setParameters(JSEngineUtil.getAccessTokenExtendedClaims(OAuth2Util.getServiceProvider(consumerKey),
+//                            spTenantDomain, jwtClaimsSet));
+//    }
 
     /**
      * Calculates access token expiry time.

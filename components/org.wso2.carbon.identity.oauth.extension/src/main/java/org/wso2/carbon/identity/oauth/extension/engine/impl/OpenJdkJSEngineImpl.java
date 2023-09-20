@@ -146,4 +146,10 @@ public class OpenJdkJSEngineImpl implements JSEngine {
             return false;
         }
     }
+
+    @Override
+    public ScriptEngine getEngine() {
+
+        return this.engine;
+    }
 }
